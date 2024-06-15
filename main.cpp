@@ -1,4 +1,9 @@
-// UNICODE character set
+#ifndef UNICODE
+#define UNICODE
+#endif // UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif // _UNICODE
 
 /*****************************************************/
 /*                                                   */
@@ -73,10 +78,10 @@ int WINAPI wWinMain(
 
         MSG msg = {};
 
-        while (GetMessageA(&msg, NULL, 0, 0))
+        while (GetMessage(&msg, NULL, 0, 0))
         {
             TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+            DispatchMessage(&msg);
         }
     }
     catch (const std::logic_error &e)
@@ -97,7 +102,7 @@ int WINAPI wWinMain(
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Get the instance of the GIF_PLAYER class from USERDATA
-    GIF_PLAYER *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    GIF_PLAYER *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     switch (msg)
     {
     case WM_CREATE:
@@ -105,7 +110,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         // Create a new instance of the GIF_PLAYER and play the GIF immediately
         gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], BACKGROUND_COLOR);
         gif->start();
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
     }
     break;
     case WM_CLOSE:
@@ -124,7 +129,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_KEYDOWN:
         switch (wParam)
         {
-        // Press ESC to close the window
+            // Press ESC to close the window
         case VK_ESCAPE:
             if (gif != NULL)
             {
@@ -132,14 +137,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             DestroyWindow(hwnd);
             break;
-        // Press SPACE to pause the GIF
+            // Press SPACE to pause the GIF
         case VK_SPACE:
             if (gif != NULL)
             {
                 gif->pause();
             }
             break;
-        // Press R to restart the GIF, the GIF will be randomly selected
+            // Press R to restart the GIF, the GIF will be randomly selected
         case 'R':
         case 'r':
             if (gif != NULL)
@@ -150,9 +155,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], BACKGROUND_COLOR);
             gif->start();
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             break;
-        // Press Q to go to the last frame of the GIF
+            // Press Q to go to the last frame of the GIF
         case 'q':
         case 'Q':
             if (gif != NULL)
@@ -176,7 +181,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, const wchar_t *window_name, int width, int height)
 {
-    WNDCLASSW wc = {
+    WNDCLASS wc = {
         CS_HREDRAW | CS_VREDRAW,
         WndProc,
         0,
@@ -188,7 +193,7 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
         NULL,
         class_name};
 
-    if (!RegisterClassW(&wc))
+    if (!RegisterClass(&wc))
         throw std::logic_error("Window Registration Failed!");
 
     // Calculate the position of the window, center of the screen
@@ -197,7 +202,7 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
     if (posX < 0 || posY < 0)
         throw std::logic_error("Window Position Calculation Failed!");
 
-    HWND hwnd = CreateWindowExW(
+    HWND hwnd = CreateWindowEx(
         WS_EX_LAYERED,
         class_name,
         window_name,

@@ -31,7 +31,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="flip_a_coin.rc">
+    <ResourceCompile Include="rc_for_msbuild.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>

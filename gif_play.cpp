@@ -12,7 +12,7 @@ static ULONG_PTR gdiplus_token;
 
 // Subwindow class registration
 static bool is_gif_wc_registered = false;
-static WNDCLASSW gif_wc = {
+static WNDCLASS gif_wc = {
     CS_HREDRAW | CS_VREDRAW,
     gif_proc,
     0,
@@ -46,7 +46,7 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, const wchar_t *path, COLORREF background_rbg, 
         // Register the subwindow class, if not already registered
         if (!is_gif_wc_registered)
         {
-            if (!RegisterClassW(&gif_wc))
+            if (!RegisterClass(&gif_wc))
                 throw std::logic_error("Subwindow Class Registration Failed!");
             is_gif_wc_registered = true;
         }
@@ -97,7 +97,7 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, COLORREF background_rbg, UINT pos
         // Register the subwindow class, if not already registered
         if (!is_gif_wc_registered)
         {
-            if (!RegisterClassW(&gif_wc))
+            if (!RegisterClass(&gif_wc))
                 throw std::logic_error("Subwindow Class Registration Failed!");
             is_gif_wc_registered = true;
         }
@@ -194,7 +194,7 @@ Rect GIF_PLAYER::get_gif_rect() const
 
 void GIF_PLAYER::create_subwindow(HWND hwnd)
 {
-    HWND subwindow = CreateWindowExW(
+    HWND subwindow = CreateWindowEx(
         WS_EX_TRANSPARENT,
         L"GIF_SUBWINDOW",
         NULL,
@@ -310,7 +310,7 @@ LRESULT CALLBACK gif_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         // Save the GIF_PLAY instance in the USERDATA of the subwindow
         CREATESTRUCT *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
         break;
     }
     case WM_PAINT:

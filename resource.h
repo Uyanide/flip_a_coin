@@ -1,6 +1,4 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ ���ɵİ����ļ���
-// �� flip_a_coin.rc ʹ��
 //
 #define IDI_ICON1 101
 #define IDB_GIF1 104

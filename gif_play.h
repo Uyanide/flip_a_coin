@@ -1,4 +1,12 @@
-#pragma once
+#ifndef GIF_PLAY_H
+#define GIF_PLAY_H
+
+#ifndef UNICODE
+#define UNICODE
+#endif // UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif // _UNICODE
 
 #include <windows.h>
 #include <stdexcept>
@@ -58,3 +66,5 @@ public:
     INT current_frame = -1;
     bool is_loop = false;
 };
+
+#endif // GIF_PLAY_H

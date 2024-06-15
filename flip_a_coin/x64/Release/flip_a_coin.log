@@ -1,8 +1,6 @@
-﻿  gif_play.cpp
-  main.cpp
-  正在生成代码
-  9 of 81 functions (11.1%) were compiled, the rest were copied from previous compilation.
-    2 functions were new in current compilation
+﻿  正在生成代码
+  0 of 81 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   flip_a_coin.vcxproj -> D:\1-TUM\C\Test\flip_a_coin\x64\Release\flip_a_coin.exe
