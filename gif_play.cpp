@@ -30,18 +30,67 @@ static WNDCLASS gif_wc = {
 /*                                          */
 /********************************************/
 
-GIF_PLAYER::GIF_PLAYER(HWND hwnd, const wchar_t *path, COLORREF background_rbg, UINT position_x, UINT position_y, bool is_loop)
+// Initialize GDI+, if not already initialized
+Status GIF_PLAYER::gdiplus_init()
+{
+    if (!is_GDIplus_initialized)
+    {
+        if (GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, NULL) != Gdiplus::Ok)
+            return Gdiplus::GenericError;
+        is_GDIplus_initialized = true;
+    }
+    return Gdiplus::Ok;
+}
+
+// Load GIF from resource
+void GIF_PLAYER::load_gif_from_rc(LPWSTR path)
+{
+    HMODULE hModule = GetModuleHandle(NULL);
+    HRSRC hResource = FindResource(hModule, path, L"GIF");
+    if (hResource == NULL)
+        throw std::logic_error("Resource not found!");
+    HGLOBAL hMemory = LoadResource(hModule, hResource);
+    if (hMemory == NULL)
+        throw std::logic_error("Resource loading failed!");
+    LPVOID pResource = LockResource(hMemory);
+    if (pResource == NULL)
+        throw std::logic_error("Resource locking failed!");
+    DWORD dwSize = SizeofResource(hModule, hResource);
+    if (CreateStreamOnHGlobal(NULL, TRUE, &pStream) != S_OK)
+        throw std::logic_error("Stream creation failed!");
+    if (pStream->Write(pResource, dwSize, NULL) != S_OK)
+        throw std::logic_error("Stream writing failed!");
+    gif_src = new Image(pStream);
+}
+
+// Get GIF information, including the number of frames, frame delay, and the position and size of the GIF
+void GIF_PLAYER::get_gif_info(UINT position_x, UINT position_y)
+{
+    frame_count = gif_src->GetFrameCount(&FrameDimensionTime);
+
+    UINT propSize = gif_src->GetPropertyItemSize(PropertyTagFrameDelay);
+    Gdiplus::PropertyItem *propItemDelay = (Gdiplus::PropertyItem *)malloc(propSize);
+    if (propItemDelay == NULL)
+        throw std::logic_error("Memory allocation failed!");
+    gif_src->GetPropertyItem(PropertyTagFrameDelay, propSize, propItemDelay);
+    frame_delay = *(UINT *)propItemDelay->value * 10;
+    free(propItemDelay);
+
+    gif_rect = Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
+    gif_RECT.left = gif_rect.X;
+    gif_RECT.top = gif_rect.Y;
+    gif_RECT.right = gif_rect.X + gif_rect.Width;
+    gif_RECT.bottom = gif_rect.Y + gif_rect.Height;
+}
+
+GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_rbg, UINT position_x, UINT position_y, bool is_loop)
     : is_loop(is_loop)
 {
     try
     {
         // Initialize GDI+, if not already initialized
-        if (!is_GDIplus_initialized)
-        {
-            if (GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, NULL) != Ok)
-                throw std::logic_error("GDI+ initialization failed!");
-            is_GDIplus_initialized = true;
-        }
+        if (gdiplus_init() != Gdiplus::Ok)
+            throw std::logic_error("GDI+ Initialization Failed!");
 
         // Register the subwindow class, if not already registered
         if (!is_gif_wc_registered)
@@ -52,83 +101,18 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, const wchar_t *path, COLORREF background_rbg, 
         }
 
         // Load image basic information
-        gif_src = new Image(path);
+        if (!is_rc)
+        {
+            gif_src = new Image(path);
+        }
+        else
+        {
+            load_gif_from_rc(path);
+        }
         if (!gif_src || gif_src->GetLastStatus() != Ok)
             throw std::logic_error("Image loading failed!");
-        gif_rect = Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
 
-        gif_RECT.left = gif_rect.X;
-        gif_RECT.top = gif_rect.Y;
-        gif_RECT.right = gif_rect.X + gif_rect.Width;
-        gif_RECT.bottom = gif_rect.Y + gif_rect.Height;
-
-        get_frame_count();
-        get_frame_delay();
-
-        background_color.SetFromCOLORREF(background_rbg);
-
-        // Create a subwindow for the GIF
-        create_subwindow(hwnd);
-    }
-    catch (const std::logic_error &e)
-    {
-        MessageBoxA(NULL, e.what(), "Error!", MB_ICONEXCLAMATION | MB_OK);
-        throw;
-    }
-
-    // Increase the instance count, if the constructor is successful
-    GIF_instance_count++;
-}
-
-// Case load from rc
-GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, COLORREF background_rbg, UINT position_x, UINT position_y, bool is_loop)
-    : is_loop(is_loop)
-{
-    try
-    {
-        // Initialize GDI+, if not already initialized
-        if (!is_GDIplus_initialized)
-        {
-            if (GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, NULL) != Ok)
-                throw std::logic_error("GDI+ initialization failed!");
-            is_GDIplus_initialized = true;
-        }
-
-        // Register the subwindow class, if not already registered
-        if (!is_gif_wc_registered)
-        {
-            if (!RegisterClass(&gif_wc))
-                throw std::logic_error("Subwindow Class Registration Failed!");
-            is_gif_wc_registered = true;
-        }
-
-        // Load image basic information, case load from rc
-        HMODULE hModule = GetModuleHandle(NULL);
-        HRSRC hResource = FindResource(hModule, path, L"GIF");
-        if (hResource == NULL)
-            throw std::logic_error("Resource not found!");
-        HGLOBAL hMemory = LoadResource(hModule, hResource);
-        if (hMemory == NULL)
-            throw std::logic_error("Resource loading failed!");
-        LPVOID pResource = LockResource(hMemory);
-        if (pResource == NULL)
-            throw std::logic_error("Resource locking failed!");
-        DWORD dwSize = SizeofResource(hModule, hResource);
-        if (CreateStreamOnHGlobal(NULL, TRUE, &pStream) != S_OK)
-            throw std::logic_error("Stream creation failed!");
-        if (pStream->Write(pResource, dwSize, NULL) != S_OK)
-            throw std::logic_error("Stream writing failed!");
-        gif_src = new Image(pStream);
-
-        gif_rect = Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
-
-        gif_RECT.left = gif_rect.X;
-        gif_RECT.top = gif_rect.Y;
-        gif_RECT.right = gif_rect.X + gif_rect.Width;
-        gif_RECT.bottom = gif_rect.Y + gif_rect.Height;
-
-        get_frame_count();
-        get_frame_delay();
+        get_gif_info(position_x, position_y);
 
         background_color.SetFromCOLORREF(background_rbg);
 
@@ -161,29 +145,17 @@ GIF_PLAYER::~GIF_PLAYER()
 
 /********************************************/
 /*                                          */
-/*      GIF information init and get        */
+/*           Getters and Setters            */
 /*                                          */
 /********************************************/
 
-UINT GIF_PLAYER::get_frame_count()
+UINT GIF_PLAYER::get_frame_count() const
 {
-    if (frame_count == -1)
-        frame_count = gif_src->GetFrameCount(&FrameDimensionTime);
     return frame_count;
 }
 
-UINT GIF_PLAYER::get_frame_delay()
+UINT GIF_PLAYER::get_frame_delay() const
 {
-    if (frame_delay == -1)
-    {
-        UINT propSize = gif_src->GetPropertyItemSize(PropertyTagFrameDelay);
-        PropertyItem *propItemDelay = (PropertyItem *)malloc(propSize);
-        if (propItemDelay == NULL)
-            throw std::logic_error("Memory allocation failed!");
-        gif_src->GetPropertyItem(PropertyTagFrameDelay, propSize, propItemDelay);
-        frame_delay = *(UINT *)propItemDelay->value * 10;
-        free(propItemDelay);
-    }
     return frame_delay;
 }
 
@@ -191,6 +163,49 @@ Rect GIF_PLAYER::get_gif_rect() const
 {
     return gif_rect;
 }
+
+GIF_PLAYER::STATE GIF_PLAYER::get_gif_state() const
+{
+    return gif_state;
+}
+
+INT GIF_PLAYER::get_current_frame() const
+{
+    return current_frame;
+}
+
+bool GIF_PLAYER::get_is_loop() const
+{
+    return is_loop;
+}
+
+void GIF_PLAYER::next_frame()
+{
+    if (gif_state == CEASE || gif_state == PAUSE)
+        return;
+    if (++current_frame == frame_count)
+    {
+        if (is_loop)
+            current_frame = 0;
+        else
+            pause();
+    }
+    InvalidateRect(gif_hwnd, NULL, FALSE);
+}
+
+void GIF_PLAYER::set_curr_frame(INT frame)
+{
+    if (frame < 0 || frame >= frame_count)
+        throw std::logic_error("Frame out of range!");
+    current_frame = frame;
+    InvalidateRect(gif_hwnd, NULL, FALSE);
+}
+
+/********************************************/
+/*                                          */
+/*           GIF playback control           */
+/*                                          */
+/********************************************/
 
 void GIF_PLAYER::create_subwindow(HWND hwnd)
 {
@@ -218,29 +233,23 @@ void GIF_PLAYER::create_subwindow(HWND hwnd)
     gif_hwnd = subwindow;
 }
 
-/********************************************/
-/*                                          */
-/*           GIF playback control           */
-/*                                          */
-/********************************************/
-
 // Draw the frame on the main window, without double buffering
-void GIF_PLAYER::draw_frame(HDC hdc, UINT frameIndex)
+void GIF_PLAYER::draw_curr_frame(HDC hdc)
 {
     Graphics graphics(hdc);
     graphics.Clear(background_color);
-    gif_src->SelectActiveFrame(&FrameDimensionTime, frameIndex);
+    gif_src->SelectActiveFrame(&FrameDimensionTime, current_frame);
     graphics.DrawImage(gif_src, gif_rect);
 }
 
 // Draw the frame on the subwindow, with double buffering
-void GIF_PLAYER::draw_frame(HDC hdc, UINT frameIndex, bool)
+void GIF_PLAYER::draw_curr_frame(HDC hdc, bool)
 {
     HDC memDC = CreateCompatibleDC(hdc);
     HBITMAP memBMP = CreateCompatibleBitmap(hdc, gif_rect.Width, gif_rect.Height);
     HBITMAP oldBMP = (HBITMAP)SelectObject(memDC, memBMP);
 
-    gif_src->SelectActiveFrame(&FrameDimensionTime, frameIndex);
+    gif_src->SelectActiveFrame(&FrameDimensionTime, current_frame);
     Graphics graphics(memDC);
     graphics.Clear(background_color);
     graphics.DrawImage(gif_src, gif_rect);
@@ -317,21 +326,13 @@ LRESULT CALLBACK gif_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        gif->draw_frame(hdc, gif->current_frame, true);
+        gif->draw_curr_frame(hdc, true);
         EndPaint(hwnd, &ps);
         break;
     }
     case WM_TIMER:
     {
-        // Draw the next frame, if meets the frame count, pause the GIF
-        if (++(gif->current_frame) == gif->get_frame_count())
-        {
-            if (gif->is_loop)
-                gif->current_frame = 0;
-            else
-                gif->pause();
-        }
-        InvalidateRect(hwnd, NULL, FALSE);
+        gif->next_frame();
         break;
     }
     case WM_CLOSE:

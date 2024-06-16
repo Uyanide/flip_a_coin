@@ -108,7 +108,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
     {
         // Create a new instance of the GIF_PLAYER and play the GIF immediately
-        gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], BACKGROUND_COLOR);
+        gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], true, BACKGROUND_COLOR);
         gif->start();
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
     }
@@ -153,7 +153,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 delete gif;
                 gif = NULL;
             }
-            gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], BACKGROUND_COLOR);
+            gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], true, BACKGROUND_COLOR);
             gif->start();
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             break;
@@ -162,11 +162,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case 'Q':
             if (gif != NULL)
             {
-                if (gif->gif_state != GIF_PLAYER::CEASE)
+                if (gif->get_gif_state() != GIF_PLAYER::CEASE)
                 {
-                    if (gif->gif_state == GIF_PLAYER::PLAY)
+                    if (gif->get_gif_state() == GIF_PLAYER::PLAY)
                         gif->pause(); // PLAY -> PAUSE
-                    gif->current_frame = gif->get_frame_count() - 2;
+                    gif->set_curr_frame(gif->get_frame_count() - 2);
                     gif->pause(); // PAUSE -> PLAY
                 }
             }

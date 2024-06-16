@@ -18,9 +18,15 @@ LRESULT CALLBACK gif_proc(HWND, UINT, WPARAM, LPARAM);
 class GIF_PLAYER
 {
 public:
+    enum STATE
+    {
+        PLAY,
+        PAUSE,
+        CEASE
+    };
+
     // Constructor
-    GIF_PLAYER(HWND, const wchar_t *, COLORREF, UINT = 0, UINT = 0, bool = false);
-    GIF_PLAYER(HWND, LPWSTR, COLORREF, UINT = 0, UINT = 0, bool = false);
+    GIF_PLAYER(HWND, LPWSTR, bool, COLORREF, UINT = 0, UINT = 0, bool = false);
 
     // Destructor
     ~GIF_PLAYER();
@@ -28,14 +34,24 @@ public:
 private:
     // Private methods
     void create_subwindow(HWND);
+    Gdiplus::Status gdiplus_init();
+    void load_gif_from_rc(LPWSTR);
+    void get_gif_info(UINT, UINT);
 
 public:
     // Public methods
-    UINT get_frame_count();
-    UINT get_frame_delay();
+    UINT get_frame_count() const;
+    UINT get_frame_delay() const;
     Gdiplus::Rect get_gif_rect() const;
-    void draw_frame(HDC, UINT);
-    void draw_frame(HDC, UINT, bool DOUBLE_BUFFER);
+    STATE get_gif_state() const;
+    INT get_current_frame() const;
+    bool get_is_loop() const;
+
+    void next_frame();
+    void set_curr_frame(INT);
+
+    void draw_curr_frame(HDC);
+    void draw_curr_frame(HDC, bool DOUBLE_BUFFER);
     void start();
     void cease();
     void pause();
@@ -55,14 +71,8 @@ private:
     // Subwindow for the GIF
     HWND gif_hwnd;
 
-public:
     // GIF playback control
-    enum
-    {
-        PLAY,
-        PAUSE,
-        CEASE
-    } gif_state = CEASE;
+    STATE gif_state = CEASE;
     INT current_frame = -1;
     bool is_loop = false;
 };
