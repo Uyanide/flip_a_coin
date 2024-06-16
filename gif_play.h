@@ -8,6 +8,8 @@
 #define _UNICODE
 #endif // _UNICODE
 
+#define WM_GIF_END (WM_USER + 1)
+
 #include <windows.h>
 #include <stdexcept>
 #include <gdiplus.h>
@@ -46,9 +48,11 @@ public:
     STATE get_gif_state() const;
     INT get_current_frame() const;
     bool get_is_loop() const;
+    HWND get_gif_hwnd() const;
 
     void next_frame();
     void set_curr_frame(INT);
+    void clear_gif_hwnd();
 
     void draw_curr_frame(HDC);
     void draw_curr_frame(HDC, bool DOUBLE_BUFFER);

@@ -118,10 +118,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY:
     {
-        // Delete the GIF_PLAYER instance
         if (gif != NULL)
         {
+            gif->cease();
             delete gif;
+            gif = NULL;
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
         }
         PostQuitMessage(0);
     }
@@ -134,6 +136,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (gif != NULL)
             {
                 gif->cease();
+                delete gif;
+                gif = NULL;
+                SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             }
             DestroyWindow(hwnd);
             break;
@@ -158,8 +163,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             break;
             // Press Q to go to the last frame of the GIF
-        case 'q':
         case 'Q':
+        case 'q':
             if (gif != NULL)
             {
                 if (gif->get_gif_state() != GIF_PLAYER::CEASE)

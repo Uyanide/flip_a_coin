@@ -1,5 +1,4 @@
 #include "gif_play.h"
-using namespace Gdiplus;
 
 // Timer ID
 constexpr UINT IDI_TIMER = 1;
@@ -7,7 +6,7 @@ constexpr UINT IDI_TIMER = 1;
 // Gdiplus initialization
 static bool is_GDIplus_initialized = false;
 static int GIF_instance_count = 0;
-static GdiplusStartupInput gdiplus_startup_input;
+static Gdiplus::GdiplusStartupInput gdiplus_startup_input;
 static ULONG_PTR gdiplus_token;
 
 // Subwindow class registration
@@ -31,7 +30,7 @@ static WNDCLASS gif_wc = {
 /********************************************/
 
 // Initialize GDI+, if not already initialized
-Status GIF_PLAYER::gdiplus_init()
+Gdiplus::Status GIF_PLAYER::gdiplus_init()
 {
     if (!is_GDIplus_initialized)
     {
@@ -60,13 +59,13 @@ void GIF_PLAYER::load_gif_from_rc(LPWSTR path)
         throw std::logic_error("Stream creation failed!");
     if (pStream->Write(pResource, dwSize, NULL) != S_OK)
         throw std::logic_error("Stream writing failed!");
-    gif_src = new Image(pStream);
+    gif_src = new Gdiplus::Image(pStream);
 }
 
 // Get GIF information, including the number of frames, frame delay, and the position and size of the GIF
 void GIF_PLAYER::get_gif_info(UINT position_x, UINT position_y)
 {
-    frame_count = gif_src->GetFrameCount(&FrameDimensionTime);
+    frame_count = gif_src->GetFrameCount(&Gdiplus::FrameDimensionTime);
 
     UINT propSize = gif_src->GetPropertyItemSize(PropertyTagFrameDelay);
     Gdiplus::PropertyItem *propItemDelay = (Gdiplus::PropertyItem *)malloc(propSize);
@@ -76,7 +75,7 @@ void GIF_PLAYER::get_gif_info(UINT position_x, UINT position_y)
     frame_delay = *(UINT *)propItemDelay->value * 10;
     free(propItemDelay);
 
-    gif_rect = Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
+    gif_rect = Gdiplus::Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
     gif_RECT.left = gif_rect.X;
     gif_RECT.top = gif_rect.Y;
     gif_RECT.right = gif_rect.X + gif_rect.Width;
@@ -103,13 +102,13 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_r
         // Load image basic information
         if (!is_rc)
         {
-            gif_src = new Image(path);
+            gif_src = new Gdiplus::Image(path);
         }
         else
         {
             load_gif_from_rc(path);
         }
-        if (!gif_src || gif_src->GetLastStatus() != Ok)
+        if (!gif_src || gif_src->GetLastStatus() != Gdiplus::Ok)
             throw std::logic_error("Image loading failed!");
 
         get_gif_info(position_x, position_y);
@@ -131,6 +130,13 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_r
 
 GIF_PLAYER::~GIF_PLAYER()
 {
+    if (gif_hwnd)
+    {
+        if (gif_state == PLAY)
+            KillTimer(gif_hwnd, IDI_TIMER);
+        DestroyWindow(gif_hwnd);
+        gif_hwnd = NULL;
+    }
     delete gif_src;
     // Release the stream, if it is created
     if (pStream)
@@ -138,7 +144,7 @@ GIF_PLAYER::~GIF_PLAYER()
     // Decrease the instance count and shut down GDI+, if the last instance is destroyed
     if (--GIF_instance_count == 0)
     {
-        GdiplusShutdown(gdiplus_token);
+        Gdiplus::GdiplusShutdown(gdiplus_token);
         is_GDIplus_initialized = false;
     }
 }
@@ -159,7 +165,7 @@ UINT GIF_PLAYER::get_frame_delay() const
     return frame_delay;
 }
 
-Rect GIF_PLAYER::get_gif_rect() const
+Gdiplus::Rect GIF_PLAYER::get_gif_rect() const
 {
     return gif_rect;
 }
@@ -201,6 +207,16 @@ void GIF_PLAYER::set_curr_frame(INT frame)
     InvalidateRect(gif_hwnd, NULL, FALSE);
 }
 
+HWND GIF_PLAYER::get_gif_hwnd() const
+{
+    return gif_hwnd;
+}
+
+void GIF_PLAYER::clear_gif_hwnd()
+{
+    gif_hwnd = NULL;
+}
+
 /********************************************/
 /*                                          */
 /*           GIF playback control           */
@@ -236,9 +252,9 @@ void GIF_PLAYER::create_subwindow(HWND hwnd)
 // Draw the frame on the main window, without double buffering
 void GIF_PLAYER::draw_curr_frame(HDC hdc)
 {
-    Graphics graphics(hdc);
+    Gdiplus::Graphics graphics(hdc);
     graphics.Clear(background_color);
-    gif_src->SelectActiveFrame(&FrameDimensionTime, current_frame);
+    gif_src->SelectActiveFrame(&Gdiplus::FrameDimensionTime, current_frame);
     graphics.DrawImage(gif_src, gif_rect);
 }
 
@@ -249,8 +265,8 @@ void GIF_PLAYER::draw_curr_frame(HDC hdc, bool)
     HBITMAP memBMP = CreateCompatibleBitmap(hdc, gif_rect.Width, gif_rect.Height);
     HBITMAP oldBMP = (HBITMAP)SelectObject(memDC, memBMP);
 
-    gif_src->SelectActiveFrame(&FrameDimensionTime, current_frame);
-    Graphics graphics(memDC);
+    gif_src->SelectActiveFrame(&Gdiplus::FrameDimensionTime, current_frame);
+    Gdiplus::Graphics graphics(memDC);
     graphics.Clear(background_color);
     graphics.DrawImage(gif_src, gif_rect);
 
@@ -279,11 +295,7 @@ void GIF_PLAYER::cease()
         // Only destroy the timer if it is still running
         if (gif_state == PLAY && !KillTimer(gif_hwnd, IDI_TIMER))
             throw std::logic_error("Timer Destruction Failed!");
-        // Destroy the subwindow, not always the case but is acceptable in this program
-        if (!DestroyWindow(gif_hwnd))
-            throw std::logic_error("Subwindow Destruction Failed!");
         gif_state = CEASE;
-        gif_hwnd = NULL;
     }
 }
 
@@ -337,6 +349,7 @@ LRESULT CALLBACK gif_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     case WM_CLOSE:
         DestroyWindow(hwnd);
+        gif->clear_gif_hwnd();
         break;
     case WM_DESTROY:
         // GIF_PLAY instance should be deleted in the main window procedure
