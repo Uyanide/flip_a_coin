@@ -78,7 +78,7 @@ int WINAPI wWinMain(
 
         MSG msg = {};
 
-        while (GetMessage(&msg, NULL, 0, 0))
+        while (GetMessage(&msg, nullptr, 0, 0))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -86,7 +86,7 @@ int WINAPI wWinMain(
     }
     catch (const std::logic_error &e)
     {
-        MessageBoxA(NULL, e.what(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+        MessageBoxA(nullptr, e.what(), "Error!", MB_ICONEXCLAMATION | MB_OK);
         return 1;
     }
 
@@ -102,13 +102,13 @@ int WINAPI wWinMain(
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Get the instance of the GIF_PLAYER class from USERDATA
-    GIF_PLAYER *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     switch (msg)
     {
     case WM_CREATE:
     {
         // Create a new instance of the GIF_PLAYER and play the GIF immediately
-        gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], true, BACKGROUND_COLOR);
+        gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, gif_count - 1)()], true, BACKGROUND_COLOR);
         gif->start();
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
     }
@@ -118,11 +118,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY:
     {
-        if (gif != NULL)
+        if (gif != nullptr)
         {
             gif->cease();
             delete gif;
-            gif = NULL;
+            gif = nullptr;
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
         }
         PostQuitMessage(0);
@@ -133,18 +133,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
             // Press ESC to close the window
         case VK_ESCAPE:
-            if (gif != NULL)
+            if (gif != nullptr)
             {
                 gif->cease();
                 delete gif;
-                gif = NULL;
+                gif = nullptr;
                 SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             }
             DestroyWindow(hwnd);
             break;
             // Press SPACE to pause the GIF
         case VK_SPACE:
-            if (gif != NULL)
+            if (gif != nullptr)
             {
                 gif->pause();
             }
@@ -152,29 +152,30 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             // Press R to restart the GIF, the GIF will be randomly selected
         case 'R':
         case 'r':
-            if (gif != NULL)
+            if (gif != nullptr)
             {
                 gif->cease();
                 delete gif;
-                gif = NULL;
             }
-            gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, 1)()], true, BACKGROUND_COLOR);
+            gif = new GIF_PLAYER(hwnd, gif_path[RandomLH(0, gif_count - 1)()], true, BACKGROUND_COLOR);
             gif->start();
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(gif));
             break;
             // Press Q to go to the last frame of the GIF
         case 'Q':
         case 'q':
-            if (gif != NULL)
+            if (gif != nullptr)
             {
                 if (gif->get_gif_state() != GIF_PLAYER::CEASE)
                 {
                     if (gif->get_gif_state() == GIF_PLAYER::PLAY)
                         gif->pause(); // PLAY -> PAUSE
-                    gif->set_curr_frame(gif->get_frame_count() - 2);
+                    gif->set_curr_frame((INT)gif->get_frame_count() - 2);
                     gif->pause(); // PAUSE -> PLAY
                 }
             }
+            break;
+        default:
             break;
         }
         break;
@@ -193,9 +194,9 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
         0,
         hInstance,
         LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)), // Load the icon from the rc file
-        LoadCursor(NULL, IDC_ARROW),
+        LoadCursor(nullptr, IDC_ARROW),
         CreateSolidBrush(BACKGROUND_COLOR),
-        NULL,
+        nullptr,
         class_name};
 
     if (!RegisterClass(&wc))
@@ -213,12 +214,12 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
         window_name,
         WS_POPUP,
         posX, posY, width, height,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         hInstance,
-        NULL);
+        nullptr);
 
-    if (hwnd == NULL)
+    if (hwnd == nullptr)
         throw std::logic_error("Window Creation Failed!");
 
     return hwnd;

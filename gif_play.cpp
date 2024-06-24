@@ -1,3 +1,10 @@
+#ifndef UNICODE
+#define UNICODE
+#endif // UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif // _UNICODE
+
 #include "gif_play.h"
 
 // Timer ID
@@ -16,11 +23,11 @@ static WNDCLASS gif_wc = {
     gif_proc,
     0,
     0,
-    GetModuleHandle(NULL),
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    GetModuleHandle(nullptr),
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
     L"GIF_SUBWINDOW"};
 
 /********************************************/
@@ -34,7 +41,7 @@ Gdiplus::Status GIF_PLAYER::gdiplus_init()
 {
     if (!is_GDIplus_initialized)
     {
-        if (GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, NULL) != Gdiplus::Ok)
+        if (GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, nullptr) != Gdiplus::Ok)
             return Gdiplus::GenericError;
         is_GDIplus_initialized = true;
     }
@@ -44,45 +51,45 @@ Gdiplus::Status GIF_PLAYER::gdiplus_init()
 // Load GIF from resource
 void GIF_PLAYER::load_gif_from_rc(LPWSTR path)
 {
-    HMODULE hModule = GetModuleHandle(NULL);
+    HMODULE hModule = GetModuleHandle(nullptr);
     HRSRC hResource = FindResource(hModule, path, L"GIF");
-    if (hResource == NULL)
+    if (hResource == nullptr)
         throw std::logic_error("Resource not found!");
     HGLOBAL hMemory = LoadResource(hModule, hResource);
-    if (hMemory == NULL)
+    if (hMemory == nullptr)
         throw std::logic_error("Resource loading failed!");
     LPVOID pResource = LockResource(hMemory);
-    if (pResource == NULL)
+    if (pResource == nullptr)
         throw std::logic_error("Resource locking failed!");
     DWORD dwSize = SizeofResource(hModule, hResource);
-    if (CreateStreamOnHGlobal(NULL, TRUE, &pStream) != S_OK)
+    if (CreateStreamOnHGlobal(nullptr, TRUE, &pStream) != S_OK)
         throw std::logic_error("Stream creation failed!");
-    if (pStream->Write(pResource, dwSize, NULL) != S_OK)
+    if (pStream->Write(pResource, dwSize, nullptr) != S_OK)
         throw std::logic_error("Stream writing failed!");
     gif_src = new Gdiplus::Image(pStream);
 }
 
 // Get GIF information, including the number of frames, frame delay, and the position and size of the GIF
-void GIF_PLAYER::get_gif_info(UINT position_x, UINT position_y)
+void GIF_PLAYER::get_gif_info(INT position_x, INT position_y)
 {
     frame_count = gif_src->GetFrameCount(&Gdiplus::FrameDimensionTime);
 
     UINT propSize = gif_src->GetPropertyItemSize(PropertyTagFrameDelay);
-    Gdiplus::PropertyItem *propItemDelay = (Gdiplus::PropertyItem *)malloc(propSize);
-    if (propItemDelay == NULL)
+    auto *propItemDelay = (Gdiplus::PropertyItem *)malloc(propSize);
+    if (propItemDelay == nullptr)
         throw std::logic_error("Memory allocation failed!");
     gif_src->GetPropertyItem(PropertyTagFrameDelay, propSize, propItemDelay);
     frame_delay = *(UINT *)propItemDelay->value * 10;
     free(propItemDelay);
 
-    gif_rect = Gdiplus::Rect(position_x, position_y, gif_src->GetWidth(), gif_src->GetHeight());
+    gif_rect = Gdiplus::Rect(position_x, position_y, (INT)gif_src->GetWidth(), (INT)gif_src->GetHeight());
     gif_RECT.left = gif_rect.X;
     gif_RECT.top = gif_rect.Y;
     gif_RECT.right = gif_rect.X + gif_rect.Width;
     gif_RECT.bottom = gif_rect.Y + gif_rect.Height;
 }
 
-GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_rbg, UINT position_x, UINT position_y, bool is_loop)
+GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_rbg, INT position_x, INT position_y, bool is_loop)
     : is_loop(is_loop)
 {
     try
@@ -120,7 +127,7 @@ GIF_PLAYER::GIF_PLAYER(HWND hwnd, LPWSTR path, bool is_rc, COLORREF background_r
     }
     catch (const std::logic_error &e)
     {
-        MessageBoxA(NULL, e.what(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+        MessageBoxA(nullptr, e.what(), "Error!", MB_ICONEXCLAMATION | MB_OK);
         throw;
     }
 
@@ -135,7 +142,7 @@ GIF_PLAYER::~GIF_PLAYER()
         if (gif_state == PLAY)
             KillTimer(gif_hwnd, IDI_TIMER);
         DestroyWindow(gif_hwnd);
-        gif_hwnd = NULL;
+        gif_hwnd = nullptr;
     }
     delete gif_src;
     // Release the stream, if it is created
@@ -196,7 +203,7 @@ void GIF_PLAYER::next_frame()
         else
             pause();
     }
-    InvalidateRect(gif_hwnd, NULL, FALSE);
+    InvalidateRect(gif_hwnd, nullptr, FALSE);
 }
 
 void GIF_PLAYER::set_curr_frame(INT frame)
@@ -204,7 +211,7 @@ void GIF_PLAYER::set_curr_frame(INT frame)
     if (frame < 0 || frame >= frame_count)
         throw std::logic_error("Frame out of range!");
     current_frame = frame;
-    InvalidateRect(gif_hwnd, NULL, FALSE);
+    InvalidateRect(gif_hwnd, nullptr, FALSE);
 }
 
 HWND GIF_PLAYER::get_gif_hwnd() const
@@ -214,7 +221,7 @@ HWND GIF_PLAYER::get_gif_hwnd() const
 
 void GIF_PLAYER::clear_gif_hwnd()
 {
-    gif_hwnd = NULL;
+    gif_hwnd = nullptr;
 }
 
 /********************************************/
@@ -228,15 +235,15 @@ void GIF_PLAYER::create_subwindow(HWND hwnd)
     HWND subwindow = CreateWindowEx(
         WS_EX_TRANSPARENT,
         L"GIF_SUBWINDOW",
-        NULL,
+        nullptr,
         WS_CHILD | WS_VISIBLE,
         gif_rect.X, gif_rect.Y, gif_rect.Width, gif_rect.Height,
         hwnd,
-        NULL,
-        GetModuleHandle(NULL),
+        nullptr,
+        GetModuleHandle(nullptr),
         this);
 
-    if (subwindow == NULL)
+    if (subwindow == nullptr)
     {
         throw std::logic_error("Subwindow Creation Failed!");
     }
@@ -262,8 +269,8 @@ void GIF_PLAYER::draw_curr_frame(HDC hdc)
 void GIF_PLAYER::draw_curr_frame(HDC hdc, bool)
 {
     HDC memDC = CreateCompatibleDC(hdc);
-    HBITMAP memBMP = CreateCompatibleBitmap(hdc, gif_rect.Width, gif_rect.Height);
-    HBITMAP oldBMP = (HBITMAP)SelectObject(memDC, memBMP);
+    auto memBMP = CreateCompatibleBitmap(hdc, gif_rect.Width, gif_rect.Height);
+    auto oldBMP = (HBITMAP)SelectObject(memDC, memBMP);
 
     gif_src->SelectActiveFrame(&Gdiplus::FrameDimensionTime, current_frame);
     Gdiplus::Graphics graphics(memDC);
@@ -282,7 +289,7 @@ void GIF_PLAYER::start()
     if (gif_state != PLAY)
     {
         gif_state = PLAY;
-        if (!SetTimer(gif_hwnd, IDI_TIMER, frame_delay, NULL))
+        if (!SetTimer(gif_hwnd, IDI_TIMER, frame_delay, nullptr))
             throw std::logic_error("Timer Creation Failed!");
     }
 }
@@ -323,14 +330,14 @@ void GIF_PLAYER::pause()
 LRESULT CALLBACK gif_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Get the GIF_PLAY instance from the subwindow
-    GIF_PLAYER *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto *gif = reinterpret_cast<GIF_PLAYER *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
     switch (msg)
     {
     case WM_CREATE:
     {
         // Save the GIF_PLAY instance in the USERDATA of the subwindow
-        CREATESTRUCT *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
+        auto *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
         break;
     }
