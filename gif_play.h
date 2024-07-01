@@ -44,7 +44,7 @@ public:
     [[nodiscard]] HWND get_gif_hwnd() const;
 
     void next_frame();
-    void set_curr_frame(INT);
+    void set_curr_frame(UINT);
     void clear_gif_hwnd();
 
     void draw_curr_frame(HDC);

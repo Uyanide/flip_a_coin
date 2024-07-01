@@ -206,9 +206,9 @@ void GIF_PLAYER::next_frame()
     InvalidateRect(gif_hwnd, nullptr, FALSE);
 }
 
-void GIF_PLAYER::set_curr_frame(INT frame)
+void GIF_PLAYER::set_curr_frame(UINT frame)
 {
-    if (frame < 0 || frame >= frame_count)
+    if (frame >= frame_count)
         throw std::logic_error("Frame out of range!");
     current_frame = frame;
     InvalidateRect(gif_hwnd, nullptr, FALSE);
