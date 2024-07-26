@@ -12,10 +12,9 @@
 /*****************************************************/
 
 // Select a color similar to the main color of the GIF,
-// but cannot be same as any pixel color in the GIF.
+// but cannot be the same color of any pixel in the GIF.
 // Used as the transparent color of the layered window.
 #define BACKGROUND_COLOR RGB(66, 137, 255)
-#define TRANSPARENCY 0
 #define gif_count 2
 
 #include <windows.h>
@@ -42,7 +41,7 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
 /*                                                   */
 /*****************************************************/
 
-class RandomLH // Random Number Generator: Lower and Higher
+class RandomLH // Random Number Generator: Lower to Higher
 {
 private:
     std::random_device rd;
@@ -71,7 +70,7 @@ int WINAPI wWinMain(
         HWND hwnd = create_window_borderless(hInstance, L"coin", L"coin", 480, 480);
 
         // Set the transparency color, also works with the animation subwindow later
-        SetLayeredWindowAttributes(hwnd, BACKGROUND_COLOR, TRANSPARENCY, LWA_COLORKEY);
+        SetLayeredWindowAttributes(hwnd, BACKGROUND_COLOR, 0, LWA_COLORKEY);
 
         ShowWindow(hwnd, nShowCmd);
         UpdateWindow(hwnd);
@@ -193,7 +192,7 @@ HWND create_window_borderless(HINSTANCE hInstance, const wchar_t *class_name, co
         0,
         0,
         hInstance,
-        LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)), // Load the icon from the rc file
+        LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)), // Load icon from rc file
         LoadCursor(nullptr, IDC_ARROW),
         CreateSolidBrush(BACKGROUND_COLOR),
         nullptr,
