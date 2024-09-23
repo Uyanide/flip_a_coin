@@ -1,5 +1,0 @@
-﻿  gif_play.cpp
-D:\1-TUM\C\Test\flip_a_coin\gif_play.cpp(211,28): warning C4018: “>=”: 有符号/无符号不匹配
-  main.cpp
-  正在生成代码...
-  flip_a_coin.vcxproj -> D:\1-TUM\C\Test\flip_a_coin\x64\Debug\flip_a_coin.exe
